@@ -95,7 +95,22 @@ func (s Storage) Remove(p *storage.Page) error {
 	return nil
 }
 
-//func (s Storage) IsExists(p *storage.Page) (bool, error) {}
+func (s Storage) IsExists(p *storage.Page) (bool, error) {
+	fileN, err := fileName(p)
+	if err != nil {
+		return false, e.Wrap("can't get fileName", err)
+	}
+
+	path := filepath.Join(s.basePath, p.UserName, fileN)
+	switch _, err = os.Stat(path); {
+	case errors.Is(err, os.ErrNotExist):
+		return false, nil
+	case err != nil:
+		return false, e.Wrap("can't stat file", err)
+	}
+
+	return true, nil
+}
 
 func fileName(p *storage.Page) (string, error) {
 	return p.Hash()
