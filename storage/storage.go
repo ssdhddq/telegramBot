@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	e "tgBot/lib/error"
-	"tgBot/storage/files"
 )
 
 type Storage interface {
