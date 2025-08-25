@@ -2,10 +2,13 @@ package storage
 
 import (
 	"crypto/sha1"
+	"errors"
 	"fmt"
 	"io"
 	e "tgBot/lib/error"
 )
+
+var ErrNoSavedPages = errors.New("no saved pages")
 
 type Storage interface {
 	Save(p *Page) error
