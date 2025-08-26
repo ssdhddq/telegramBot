@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/url"
@@ -42,7 +43,7 @@ func (p *Processor) savePage(pageURL string, chatID int, username string) error 
 		UserName: username,
 	}
 
-	isExists, err := p.storage.IsExists(page)
+	isExists, err := p.storage.IsExists(context.Background(), page)
 	if err != nil {
 		return e.Wrap("error is Exists func", err)
 	}
@@ -51,7 +52,7 @@ func (p *Processor) savePage(pageURL string, chatID int, username string) error 
 		return p.tg.SendMessage(chatID, msgAlreadyExists)
 	}
 
-	if err := p.storage.Save(page); err != nil {
+	if err := p.storage.Save(context.Background(), page); err != nil {
 		return e.Wrap("error saving page", err)
 	}
 
@@ -63,7 +64,7 @@ func (p *Processor) savePage(pageURL string, chatID int, username string) error 
 }
 
 func (p *Processor) sendRandom(chatID int, username string) error {
-	page, err := p.storage.PickRandom(username)
+	page, err := p.storage.PickRandom(context.Background(), username)
 	if err != nil && !errors.Is(err, storage.ErrNoSavedPages) {
 		return e.Wrap("error pick random page", err)
 	}
@@ -76,7 +77,7 @@ func (p *Processor) sendRandom(chatID int, username string) error {
 		return e.Wrap("error sending random page", err)
 	}
 
-	return p.storage.Remove(page)
+	return p.storage.Remove(context.Background(), page)
 }
 
 func (p *Processor) sendHelp(chatID int) error {
