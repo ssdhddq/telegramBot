@@ -33,5 +33,5 @@ func (p Page) Hash() (string, error) {
 		return "", e.Wrap("can't create hash on UserName", err)
 	}
 
-	return fmt.Sprint("%x", h.Sum(nil)), nil
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }

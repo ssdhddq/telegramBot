@@ -70,7 +70,8 @@ func (s Storage) PickRandom(userName string) (*storage.Page, error) {
 	n := rand.Intn(len(files))
 
 	file := files[n]
-	data, err := s.decodePage(file.Name())
+	fileP := filepath.Join(path, file.Name())
+	data, err := s.decodePage(fileP)
 	if err != nil {
 		return nil, e.Wrap("can't decode file", err)
 	}
