@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"errors"
 	_ "github.com/mattn/go-sqlite3"
 	e "tgBot/lib/error"
 	"tgBot/storage"
@@ -41,7 +42,7 @@ func (s *Storage) PickRandom(ctx context.Context, userName string) (*storage.Pag
 	var url string
 
 	err := s.db.QueryRowContext(ctx, q, userName).Scan(&url)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, storage.ErrNoSavedPages
 	}
 	if err != nil {
@@ -86,4 +87,44 @@ func (s *Storage) Init(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (s *Storage) GetAll(ctx context.Context, userName string) (*[]storage.Page, error) {
+	q := `SELECT url FROM pages WHERE user_name = ? ORDER BY RANDOM()`
+
+	var urls []string
+
+	rows, err := s.db.QueryContext(ctx, q, userName)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, e.Wrap("sql don't find page", err)
+	}
+
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var pages = make([]storage.Page, 0, len(urls))
+	for rows.Next() {
+		var url string
+		if err = rows.Scan(&url); err != nil {
+			return nil, e.Wrap("don't scan rows", err)
+		}
+		pages = append(pages, storage.Page{
+			URL:      url,
+			UserName: userName,
+		})
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, e.Wrap("iterate rows", err)
+	}
+
+	if len(pages) == 0 {
+		return nil, nil
+	}
+
+	return &pages, nil
 }

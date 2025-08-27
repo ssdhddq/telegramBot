@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	RndCmd   = "/rnd"
-	HelpCmd  = "/help"
-	StartCmd = "/start"
+	RndCmd    = "/rnd"
+	HelpCmd   = "/help"
+	StartCmd  = "/start"
+	GetAllCmd = "/all"
 )
 
 func (p *Processor) doCmd(text string, chatID int, username string) error {
@@ -32,6 +33,8 @@ func (p *Processor) doCmd(text string, chatID int, username string) error {
 		return p.sendHelp(chatID)
 	case StartCmd:
 		return p.sendStart(chatID)
+	case GetAllCmd:
+		return p.sendAll(chatID, username)
 	default:
 		return p.tg.SendMessage(chatID, msgUnknownCommand)
 	}
@@ -80,6 +83,25 @@ func (p *Processor) sendRandom(chatID int, username string) error {
 	return p.storage.Remove(context.Background(), page)
 }
 
+func (p *Processor) sendAll(chatID int, username string) error {
+	pages, err := p.storage.GetAll(context.Background(), username)
+	if err != nil && !errors.Is(err, storage.ErrNoSavedPages) {
+		return e.Wrap("error get all page", err)
+	}
+
+	if errors.Is(err, storage.ErrNoSavedPages) {
+		return p.tg.SendMessage(chatID, msgNoSavedPages)
+	}
+
+	pagesS := masToString(*pages)
+
+	if err := p.tg.SendMessage(chatID, pagesS); err != nil {
+		return e.Wrap("error sending all page", err)
+	}
+
+	return nil
+}
+
 func (p *Processor) sendHelp(chatID int) error {
 	return p.tg.SendMessage(chatID, msgHelp)
 }
@@ -96,4 +118,12 @@ func isURL(text string) bool {
 	u, err := url.Parse(text)
 
 	return err == nil && u.Host != ""
+}
+
+func masToString(pages []storage.Page) string {
+	var str string
+	for _, page := range pages {
+		str = str + page.URL + "\n"
+	}
+	return str
 }
